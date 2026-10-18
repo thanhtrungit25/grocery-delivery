@@ -1,6 +1,7 @@
 import Hero from "../components/Hero"
 import Features from "../components/Features"
 import HomeCategories from "../components/HomeCategories"
+import PopularProducts from "../components/PopularProducts"
 
 const Home = () => {
   return (
@@ -8,6 +9,7 @@ const Home = () => {
       <Hero />
       <Features />
       <HomeCategories />
+      <PopularProducts />
     </div>
   )
 }
