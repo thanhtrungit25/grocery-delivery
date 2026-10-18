@@ -1,8 +1,8 @@
 
-const SearchResuts = () => {
+const SearchResults = () => {
   return (
-    <div>SearchResuts</div>
+    <div>SearchResults </div>
   )
 }
 
-export default SearchResuts
+export default SearchResults 
