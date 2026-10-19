@@ -13,7 +13,8 @@ import {
   XIcon,
 } from "lucide-react";
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useCart } from "../context/CartContext";
 
 const Navbar = () => {
   const user: any = {
@@ -21,17 +22,16 @@ const Navbar = () => {
     email: "john@example.com",
     isAdmin: true,
   };
-  const { cartCount, setIsCartOpen } = {
-    cartCount: 5,
-    setIsCartOpen: (_data: any) => {},
-  };
+
+  const navigate = useNavigate();
+  const { setIsCartOpen, cartCount } = useCart();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   const handleLogout = () => {
     setUserMenuOpen(false);
-    // navigate("/")
+    navigate("/");
   };
 
   return (
@@ -71,7 +71,10 @@ const Navbar = () => {
           {/* Right Actions */}
           <div className="flex items-center gap-3">
             {/* Cart */}
-            <button className="relative p-2 rounded-xl" onClick={() => setIsCartOpen(true)}>
+            <button
+              className="relative p-2 rounded-xl"
+              onClick={() => setIsCartOpen(true)}
+            >
               <ShoppingCartIcon className="size-5 text-zinc-900" />
               {cartCount > 0 && (
                 <span className="absolute -top-1 -right-1 text-[10px] size-4 bg-app-orange text-white rounded-full">
@@ -120,7 +123,7 @@ const Navbar = () => {
                     className="fixed inset-0 z-40"
                     onClick={() => setUserMenuOpen(false)}
                   >
-                    <div className="absolute z-50 right-0 border border-app-border w-56 rounded-xl shadow-lg mt-2.5 py-2 animate-fade-in">
+                    <div className="absolute right-0 mt-2.5 w-56 bg-white rounded-xl shadow-lg border border-app-border py-2 z-50 animate-fade-in">
                       {user && (
                         <div className="px-4 py-2 border-b border-app-border">
                           <p className="text-sm font-medium text-zinc-900">
@@ -171,17 +174,17 @@ const Navbar = () => {
                             <span className="text-app-orange-dark">
                               Admin Panel
                             </span>
-                            {user && (
-                              <div className="border-t border-app-border pt-1">
-                                <button
-                                  onClick={handleLogout}
-                                  className="flex items-center gap-3 px-4 py-2.5 text-sm text-app-error hover:bg-red-50 w-full transition-colors"
-                                >
-                                  <LogOutIcon size={16} /> Logout
-                                </button>
-                              </div>
-                            )}
                           </Link>
+                        )}
+                        {user && (
+                          <div className="border-t border-app-border pt-1">
+                            <button
+                              onClick={handleLogout}
+                              className="flex items-center gap-3 px-4 py-2.5 text-sm text-app-error hover:bg-red-50 w-full transition-colors"
+                            >
+                              <LogOutIcon size={16} /> Logout
+                            </button>
+                          </div>
                         )}
                       </div>
                     </div>
