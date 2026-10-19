@@ -1,9 +1,9 @@
 import { ArrowRightIcon } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { type Product } from '../types'
-import ProductCard from './ProductCard'
-import { dummyProducts } from '../assets/assets'
+import { type Product } from '../../types'
+import { dummyProducts } from '../../assets/assets'
+import ProductCard from '../ProductCard'
 
 const PopularProducts = () => {
 
