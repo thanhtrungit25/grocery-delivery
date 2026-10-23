@@ -56,7 +56,7 @@ const Navbar = () => {
           </div>
 
           {/* Search */}
-          <form className="hidden sm:flex flex-1 max-w-sm text-xs sm:text-sm">
+          <form className="hidden sm:flex flex-1 max-w-sm text-xs sm:text-sm" onSubmit={(e) => {e.preventDefault();navigate("/search?q=" + searchQuery)}}>
             <div className="relative w-full">
               <SearchIcon className="size-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-500" />
               <input
