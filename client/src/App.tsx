@@ -14,6 +14,8 @@ import Addresses from "./pages/Addresses";
 import ProductedRoute from "./components/ProductedRoute";
 import AdminLayout from "./pages/admin/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminProducts from "./pages/admin/AdminProducts";
+import AdminProductForm from "./pages/admin/AdminProductForm";
 
 const App = () => {
   return (
@@ -53,7 +55,8 @@ const App = () => {
         {/* Admin Pages */}
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<AdminDashboard />} />
-
+          <Route path='products' element={<AdminProducts />} />
+          <Route path='products/new' element={<AdminProductForm />} />
         </Route>
       </Routes>
     </>

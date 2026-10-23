@@ -39,6 +39,7 @@ const AdminLayout = () => {
               <NavLink
                 key={link.to}
                 to={link.to}
+                end={true}
                 className={({ isActive }) =>
                   `flex items-center gap-3 p-2.5 text-sm rounded-md transition-colors ${
                     isActive
