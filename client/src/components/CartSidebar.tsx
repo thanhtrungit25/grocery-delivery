@@ -8,7 +8,7 @@ const CartSidebar = () => {
 
   const { isCartOpen, setIsCartOpen, items, updateQuantity, removeFromCart, cartTotal, cartCount } = useCart();
 
-  const deliveryFee = cartTotal > 40 ? 0 : 1.99;
+  const deliveryFee = cartTotal > 20 ? 0 : 1.99;
 
   const grandTotal = cartTotal + deliveryFee;
 
