@@ -11,7 +11,7 @@ import Checkout from "./pages/Checkout";
 import MyOrders from "./pages/MyOrders";
 import OrderTracking from "./pages/OrderTracking";
 import Addresses from "./pages/Addresses";
-import ProductedRoute from "./components/ProductedRoute";
+import ProtectedRoute from "./components/ProtectedRoute";
 import AdminLayout from "./pages/admin/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminProducts from "./pages/admin/AdminProducts";
@@ -49,7 +49,7 @@ const App = () => {
           <Route path="/products/:id" element={<ProductPage />} />
           <Route path="/search" element={<SearchResults />} />
           <Route path="/deals" element={<FlashDeals />} />
-          <Route element={<ProductedRoute />}>
+          <Route element={<ProtectedRoute />}>
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/orders" element={<MyOrders />} />
             <Route path="/orders/:id" element={<OrderTracking />} />
