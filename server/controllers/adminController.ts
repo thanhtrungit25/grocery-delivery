@@ -1,0 +1,144 @@
+import { Request, Response } from "express";
+import { prisma } from "../config/prisma.js";
+import bcrypt from "bcrypt";
+
+
+const unpaidOnlinePaymentFilter = {
+  OR: [
+    { paymentMethod: "RAZORPAY", isPaid: false },
+    { paymentMethod: "card", isPaid: false },
+  ],
+};
+
+// Get admin dashboard data
+export const getAdminStats = async (req: Request, res: Response) => {
+  const [
+    totalOrders,
+    totalUsers,
+    totalProducts,
+    outOfStock,
+    totalPartners,
+    recentOrders,
+  ] = await Promise.all([
+    prisma.order.count({
+      where: { NOT: unpaidOnlinePaymentFilter },
+    }),
+
+    prisma.user.count(),
+    prisma.product.count(),
+    prisma.product.count({ where: { stock: 0 } }),
+    prisma.deliveryPartner.count(),
+    prisma.order.findMany({
+      where: { NOT: unpaidOnlinePaymentFilter },
+      orderBy: { createdAt: "desc" },
+      take: 8,
+      include: {
+        user: { select: { name: true, email: true } },
+        deliveryPartner: { select: { name: true, phone: true } },
+      },
+    }),
+  ]);
+
+  res.json({
+    totalOrders,
+    totalUsers,
+    totalProducts,
+    outOfStock,
+    totalPartners,
+    recentOrders,
+  });
+};
+
+// Create delivery partner profile
+export const createDeliveryPartners = async (req: Request, res: Response) => {
+  const { name, email, password, phone, vehicleType } = req.body;
+
+  if (!name || !email || !password || !phone || !vehicleType) {
+    return res.status(400).json({ message: "Please provide all fields" });
+  }
+
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+  const partner = await prisma.deliveryPartner.create({
+    data: {
+      name,
+      email: email.toLowerCase(),
+      password: hashedPassword,
+      phone,
+      vehicleType,
+    },
+  });
+
+  res.status(201).json({ partner });
+};
+
+// Get delivery partners list for admin
+export const getDeliveryPartners = async (req: Request, res: Response) => {
+  const partners = await prisma.deliveryPartner.findMany({
+    orderBy: { createdAt: "desc" },
+  });
+  res.json({ partners });
+};
+
+// Update delivery partner profile
+export const updateDeliveryPartners = async (req: Request, res: Response) => {
+  const { name, phone, vehicleType, isActive } = req.body;
+
+  const data: any = {};
+
+  if (name) data.name = name;
+  if (phone) data.phone = phone;
+  if (vehicleType) data.vehicleType = vehicleType;
+  data.isActive = isActive;
+
+  try {
+    const partner = await prisma.deliveryPartner.update({
+      where: { id: req.params.id as string },
+      data,
+    });
+    res.json({ partner });
+  } catch (error) {
+    res.status(404).json({ message: "Partner not found" });
+  }
+}
+
+// Assign delivery partner for order
+export const assignDeliveryPartners = async (req: Request, res: Response) => {
+  const { partnerId } = req.body;
+
+  const order = await prisma.order.findUnique({
+    where: { id: req.params.id as string },
+  });
+
+  const partner = await prisma.deliveryPartner.findUnique({
+    where: { id: partnerId },
+  });
+
+  const history: any[] = Array.isArray(order!.statusHistory)
+    ? order!.statusHistory
+    : [];
+
+  let status = order!.status;
+  if (order!.status === "Placed" || order!.status === "Confirmed") {
+    status = "Assigned";
+    history.push({
+      status: "Assigned",
+      note: `Assigned to ${partner!.name}`,
+      timestamp: new Date(),
+    });
+  }
+
+  const otp = String(Math.floor(100000 + Math.random() * 900000));
+
+  await prisma.order.update({
+    where: { id: order!.id },
+    data: {
+      deliveryPartnerId: partner!.id,
+      deliveryOtp: otp,
+      status: status,
+      statusHistory: history,
+    }
+  });
+
+  res.json({ order });
+};
