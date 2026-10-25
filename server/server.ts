@@ -8,6 +8,7 @@ import orderRouter from "./routes/orderRoutes.js";
 import addressRouter from "./routes/addressRoutes.js";
 import adminRouter from "./routes/adminRoutes.js";
 import deliveryPartnerRouter from "./routes/deliveryPartnerRoutes.js";
+import paymentRouter from "./routes/paymentRoutes.js";
 
 const app = express();
 
@@ -28,6 +29,7 @@ app.use("/api/orders", orderRouter);
 app.use("/api/addresses", addressRouter);
 app.use("/api/admin", adminRouter);
 app.use("/api/delivery", deliveryPartnerRouter);
+app.use("/api/payment", paymentRouter);
 
 // Error handling
 app.use((error: any, req: Request, res: Response, next: NextFunction) => {
