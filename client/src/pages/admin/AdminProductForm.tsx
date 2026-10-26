@@ -1,10 +1,14 @@
 import React, { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
-import { dummyProducts, categoriesData } from "../../assets/assets";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeftIcon } from "lucide-react";
+import toast from "react-hot-toast";
+import { categoriesData } from "../../assets/assets";
+import api from "../../config/api";
 import Loading from "../../components/Loading";
 
 const AdminProductForm = () => {
+  const navigate = useNavigate();
+
   const { id } = useParams();
   const isEdit = Boolean(id);
 
@@ -23,19 +27,81 @@ const AdminProductForm = () => {
     stock: "",
     isOrganic: false,
   });
+  console.log("formData:", formData);
 
   useEffect(() => {
     const fetchData = async () => {
-      if (isEdit) {
-        setFormData(() => dummyProducts.find((p) => p._id === id) as any);
+      try {
+        if (isEdit) {
+        const { data: productData } = await api.get(`/products/${id}`);
+        const p = productData.product;
+        setFormData({
+          name: p.name,
+          description: p.description,
+          price: p.price,
+          originalPrice: p.originalPrice,
+          image: p.image,
+          category: p.category,
+          unit: p.unit,
+          stock: p.stock,
+          isOrganic: p.isOrganic,
+        });
       }
-      setLoading(false);
+      } catch (error: any) {
+        toast.error(
+          error?.response?.data?.message || "Failed to fetch product",
+        );
+      } finally {
+        setLoading(false);
+      }
     };
     fetchData();
   }, [id, isEdit]);
 
   const handleSubmit = async (e: React.SubmitEvent) => {
     e.preventDefault();
+
+    try {
+      let finalImageUrl = formData.image;
+      
+      if (imageFile) {
+        const formData = new FormData();
+        formData.append("image", imageFile);
+        const { data } = await api.post("/upload", formData);
+        finalImageUrl = data.url;
+      }
+
+      if (!finalImageUrl) {
+        toast.error("Please upload a product image");
+        setSaving(false);
+        return;
+      }
+
+      const payload = {
+        ...formData,
+        image: finalImageUrl,
+        price: Number(formData.price),
+        originalPrice: formData.originalPrice
+          ? Number(formData.originalPrice)
+          : 0,
+        stock: Number(formData.stock),
+      };
+
+      if (isEdit) {
+        await api.put(`/products/${id}`, payload);
+        toast.success("Product updated successfully!");
+      } else {
+        await api.post("/products", payload);
+        toast.success("Product added successfully!");
+      }
+      navigate("/admin/products");
+    } catch (error: any) {
+      toast.error(
+          error?.response?.data?.message || "Failed to fetch product",
+        );
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
