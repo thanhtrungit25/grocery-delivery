@@ -1,6 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import type { Order } from "../../types";
-import { dummyDashboardOrdersData } from "../../assets/assets";
 import { NavigationIcon, PackageIcon } from "lucide-react";
 import Loading from "../../components/Loading";
 import DeliveryOrderCard from "../../components/Delivery/DeliveryOrderCard";
@@ -31,6 +30,7 @@ const DeliveryDashboard = () => {
   // Cancel modal
   const [cancelModal, setCancelModal] = useState<string | null>(null);
   const [cancelReason, setCancelReason] = useState("");
+  const watchIdRef = useRef<number | null>(null);
 
   const fetchOrders = async () => {
     setLoading(true);
@@ -55,28 +55,131 @@ const DeliveryDashboard = () => {
     fetchOrders();
   }, [tab]);
 
+  // Send location every 10s for active deliveries
+  useEffect(() => {
+    const activeOrders = orders.filter((o) =>
+      ["Assigned", "Packed", "Out for Delivery"].includes(o.status),
+    );
+
+    if (activeOrders.length === 0 || !tracking) {
+      if (watchIdRef.current !== null) {
+        navigator.geolocation.clearWatch(watchIdRef.current);
+        watchIdRef.current = null;
+      }
+      return;
+    }
+
+    const sendLocation = (post: GeolocationPosition) => {
+      const { latitude: lat, longitude: lng } = post.coords;
+      activeOrders.forEach((order) => {
+        axios
+          .put(
+            `${API_URL}/delivery/my-deliveries/${order.id}/location`,
+            { lat, lng },
+            getAuthHeaders(),
+          )
+          .catch(() => {});
+      });
+    }
+
+    watchIdRef.current = navigator.geolocation.watchPosition(
+      sendLocation,
+      () => {},
+      {
+        enableHighAccuracy: true,
+        maximumAge: 10000,
+      },
+    );
+
+    // Also send on interval for more consistent updates
+    const interval = setInterval(() => {
+      navigator.geolocation.getCurrentPosition(sendLocation, () => {}, {
+        enableHighAccuracy: true,
+      })
+    }, 10000);
+
+    return () => {
+      if (watchIdRef.current !== null) {
+        navigator.geolocation.clearWatch(watchIdRef.current);
+        watchIdRef.current = null;
+      }
+      clearInterval(interval);
+    };
+  }, [orders, tracking]);
+
   const handleUpdateStatus = async (orderId: string, status: string) => {
     console.log(orderId, status);
+    try {
+      await axios.put(
+        `${API_URL}/delivery/my-deliveries/${orderId}/status`,
+        {
+          status,
+        },
+        getAuthHeaders(),
+      );
+
+      toast.success(`Status updated to ${status}`);
+
+      fetchOrders();
+    } catch (error: any) {
+      toast.error(
+        error?.response?.data?.message ||
+          error?.message ||
+          "Failed to update status",
+      );
+    }
   };
 
   const handleComplete = async () => {
     if (!otpModal || !otp) return;
     setSubmitting(true);
-    setTimeout(() => {
-      setSubmitting(false);
+    try {
+      await axios.put(
+        `${API_URL}/delivery/my-deliveries/${otpModal}/complete`,
+        {
+          otp,
+        },
+        getAuthHeaders(),
+      );
+      toast.success("Delivery completed successfully");
       setOtpModal(null);
       setOtp("");
-    }, 1000);
+      fetchOrders();
+    } catch (error: any) {
+      toast.error(
+        error?.response?.data?.message ||
+          error?.message ||
+          "Failed to complete delivery",
+      );
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleCancel = async () => {
     if (!cancelModal) return;
     setSubmitting(true);
-    setTimeout(() => {
-      setSubmitting(false);
+    try {
+      await axios.put(
+        `${API_URL}/delivery/my-deliveries/${cancelModal}/cancel`,
+        {
+          reason: cancelReason,
+        },
+        getAuthHeaders(),
+      )
+      toast.success("Delivery cancelled successfully");
       setCancelModal(null);
       setCancelReason("");
-    }, 1000);
+      fetchOrders();
+    } catch (error: any) {
+      toast.error(
+        error?.response?.data?.message ||
+          error?.message ||
+          "Failed to complete delivery",
+      );
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
