@@ -60,7 +60,7 @@ export interface OrderItem {
 }
 
 export interface DeliveryPartner {
-    _id: string;
+    id: string;
     name: string;
     email: string;
     phone: string;
