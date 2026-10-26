@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
-import type { DeliveryPartner } from "../../types";
-import { dummyDeliveryPartnerData } from "../../assets/assets";
-import Loading from "../../components/Loading";
+import toast from "react-hot-toast";
 import { MailIcon, PhoneIcon, PlusIcon, Truck, XIcon } from "lucide-react";
+import type { DeliveryPartner } from "../../types";
+import api from "../../config/api";
+import Loading from "../../components/Loading";
 
 const AdminDeliveryPartners = () => {
   const [partners, setPartners] = useState<DeliveryPartner[]>([]);
@@ -18,8 +19,14 @@ const AdminDeliveryPartners = () => {
   });
 
   const fetchPartners = async () => {
-    setPartners(dummyDeliveryPartnerData as any);
-    setTimeout(() => setLoading(false), 1000);
+    try {
+      const { data } = await api.get("/admin/delivery-partners");
+      setPartners(data.partners);
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || error?.message || "Failed");
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -28,10 +35,35 @@ const AdminDeliveryPartners = () => {
 
   const handleSubmit = async (e: React.SubmitEvent) => {
     e.preventDefault();
+    setSaving(true);
+    try {
+      await api.post("/admin/delivery-partners", form);
+      toast.success("Partner onboarded successfully!");
+      setShowForm(false);
+      setForm({
+        name: "",
+        email: "",
+        password: "",
+        phone: "",
+        vehicleType: "bike",
+      });
+
+      fetchPartners();
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || error?.message || "Failed");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const toggleActive = async (id: string, isActive: boolean) => {
-    console.log(id, isActive);
+    try {
+      await api.put(`/admin/delivery-partners/${id}`, { isActive: !isActive });
+      toast.success(isActive ? "Partner deactivated!" : "Partner activated!")
+      fetchPartners();
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || error?.message || "Failed");
+    }
   };
 
   if (loading) return <Loading />;
@@ -65,7 +97,7 @@ const AdminDeliveryPartners = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {partners.map((p) => (
             <div
-              key={p._id}
+              key={p.id}
               className="bg-white rounded-2xl border border-app-border p-5 space-y-3"
             >
               <div className="flex items-center justify-between">
@@ -92,10 +124,17 @@ const AdminDeliveryPartners = () => {
               </div>
 
               <div className="space-y-1.5 text-sm text-zinc-600">
-                <p className="flex items-center gap-2"><MailIcon className="w-3.5 h-3.5 text-zinc-400" /> {p.email}</p>
-                <p className="flex items-center gap-2"><PhoneIcon className="w-3.5 h-3.5 text-zinc-400" /> {p.phone}</p>
+                <p className="flex items-center gap-2">
+                  <MailIcon className="w-3.5 h-3.5 text-zinc-400" /> {p.email}
+                </p>
+                <p className="flex items-center gap-2">
+                  <PhoneIcon className="w-3.5 h-3.5 text-zinc-400" /> {p.phone}
+                </p>
               </div>
-              <button onClick={() => toggleActive(p._id, p.isActive)} className={`w-full py-2 text-xs font-medium rounded-lg transition-colors ${p.isActive ? "bg-red-50 text-red-600 hover:bg-red-100" : "bg-green-50 text-green-600 hover:bg-green-100"}`}>
+              <button
+                onClick={() => toggleActive(p.id, p.isActive)}
+                className={`w-full py-2 text-xs font-medium rounded-lg transition-colors ${p.isActive ? "bg-red-50 text-red-600 hover:bg-red-100" : "bg-green-50 text-green-600 hover:bg-green-100"}`}
+              >
                 {p.isActive ? "Deactivate" : "Activate"}
               </button>
             </div>
@@ -116,34 +155,86 @@ const AdminDeliveryPartners = () => {
               className="bg-white rounded-2xl p-6 w-full max-w-lg animate-fade-in"
             >
               <div className="flex items-center justify-between mb-5">
-                <h2 className="text-lg font-semibold text-app-green">Onboard Delivery Partner</h2>
-                <button onClick={() => setShowForm(false)} className="p-2 hover:bg-app-cream rounded-lg">
+                <h2 className="text-lg font-semibold text-app-green">
+                  Onboard Delivery Partner
+                </h2>
+                <button
+                  onClick={() => setShowForm(false)}
+                  className="p-2 hover:bg-app-cream rounded-lg"
+                >
                   <XIcon className="size-5" />
                 </button>
               </div>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-app-green mb-1.5">Full Name</label>
-                  <input type="text" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full px-4 py-2.5 text-sm rounded-xl border border-app-border focus:border-app-border outline-none" />
+                  <label className="block text-sm font-medium text-app-green mb-1.5">
+                    Full Name
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={form.name}
+                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                    className="w-full px-4 py-2.5 text-sm rounded-xl border border-app-border focus:border-app-border outline-none"
+                  />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-sm font-medium text-app-green mb-1.5">Email</label>
-                    <input type="email" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="w-full px-4 py-2.5 text-sm rounded-xl border border-app-border focus:border-app-border outline-none" />
-                   </div>
+                    <label className="block text-sm font-medium text-app-green mb-1.5">
+                      Email
+                    </label>
+                    <input
+                      type="email"
+                      required
+                      value={form.email}
+                      onChange={(e) =>
+                        setForm({ ...form, email: e.target.value })
+                      }
+                      className="w-full px-4 py-2.5 text-sm rounded-xl border border-app-border focus:border-app-border outline-none"
+                    />
+                  </div>
                   <div>
-                    <label className="block text-sm font-medium text-app-green mb-1.5">Password</label>
-                    <input type="password" minLength={6} required value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="w-full px-4 py-2.5 text-sm rounded-xl border border-app-border focus:border-app-border outline-none" />
+                    <label className="block text-sm font-medium text-app-green mb-1.5">
+                      Password
+                    </label>
+                    <input
+                      type="password"
+                      minLength={6}
+                      required
+                      value={form.password}
+                      onChange={(e) =>
+                        setForm({ ...form, password: e.target.value })
+                      }
+                      className="w-full px-4 py-2.5 text-sm rounded-xl border border-app-border focus:border-app-border outline-none"
+                    />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-sm font-medium text-app-green mb-1.5">Phone</label>
-                    <input type="text" required value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="w-full px-4 py-2.5 text-sm rounded-xl border border-app-border focus:border-app-border outline-none" />
-                   </div>
+                    <label className="block text-sm font-medium text-app-green mb-1.5">
+                      Phone
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={form.phone}
+                      onChange={(e) =>
+                        setForm({ ...form, phone: e.target.value })
+                      }
+                      className="w-full px-4 py-2.5 text-sm rounded-xl border border-app-border focus:border-app-border outline-none"
+                    />
+                  </div>
                   <div>
-                    <label className="block text-sm font-medium text-app-green mb-1.5">Vehicle</label>
-                    <select value={form.vehicleType} onChange={(e) => setForm({...form, vehicleType: e.target.value})} className="w-full px-4 py-2.5 text-sm border border-app-border bg-white outline-none">
+                    <label className="block text-sm font-medium text-app-green mb-1.5">
+                      Vehicle
+                    </label>
+                    <select
+                      value={form.vehicleType}
+                      onChange={(e) =>
+                        setForm({ ...form, vehicleType: e.target.value })
+                      }
+                      className="w-full px-4 py-2.5 text-sm border border-app-border bg-white outline-none"
+                    >
                       <option value="bike">Bike</option>
                       <option value="scooter">Scooter</option>
                       <option value="car">Car</option>
@@ -152,7 +243,11 @@ const AdminDeliveryPartners = () => {
                 </div>
               </div>
 
-              <button type="submit" className="mt-6 w-full py-3 bg-app-green text-white font-semibold hover:bg-app-green-light transition-colors disabled:opacity-60">
+              <button
+                type="submit"
+                disabled={saving}
+                className="mt-6 w-full py-3 bg-app-green text-white font-semibold hover:bg-app-green-light transition-colors disabled:opacity-60"
+              >
                 {saving ? "Creating..." : "Create Partner"}
               </button>
             </form>
