@@ -1,10 +1,8 @@
-const FilterPanel = ({ categories, category, updateFilter, minPrice, maxPrice, hasFilters, clearFilters }: any) => {
+const FilterPanel = ({ categories, category, organic, updateFilter, minPrice, maxPrice, hasFilters, clearFilters }: any) => {
   const categoriesWithAll = [
     { slug: "", name: "All Categories" },
     ...categories,
   ];
-
-  console.log("🐴 categoriesWithAll", categoriesWithAll);
 
   return (
     <div className="space-y-6">
@@ -22,6 +20,20 @@ const FilterPanel = ({ categories, category, updateFilter, minPrice, maxPrice, h
             </button>
           ))}
         </div>
+      </div>
+
+      <div>
+        <label className="flex items-center gap-3 text-sm text-app-text-light cursor-pointer">
+          <input
+            type="checkbox"
+            checked={organic === "true"}
+            onChange={(e) =>
+              updateFilter("organic", e.target.checked ? "true" : "")
+            }
+            className="size-4 accent-app-green"
+          />
+          Organic products only
+        </label>
       </div>
 
       {/* Price Range */}

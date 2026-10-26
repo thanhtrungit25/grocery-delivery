@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { categoriesData, dummyProducts } from "../assets/assets";
-
-import type { Product } from "../types";
+import toast from "react-hot-toast";
 import { ChevronDown, Home, SlidersHorizontal, XIcon } from "lucide-react";
+import { categoriesData } from "../assets/assets";
+import type { Product } from "../types";
+import api from "../config/api";
+import Loading from "../components/Loading";
 import FilterPanel from "../components/FilterPanel";
 import ProductCard from "../components/ProductCard";
-import Loading from "../components/Loading";
 
 const Products = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -17,6 +18,7 @@ const Products = () => {
   const [totalPages, setTotalPages] = useState(1);
 
   const category = searchParams.get("category") || "";
+  const organic = searchParams.get("organic") || "";
   const minPrice = searchParams.get("minPrice") || "";
   const maxPrice = searchParams.get("maxPrice") || "";
   const sort = searchParams.get("sort") || "";
@@ -26,19 +28,33 @@ const Products = () => {
 
   const activeCategory = categoriesData.find((c) => c.slug === category);
 
-  const hasFilters = category || minPrice || maxPrice || sort;
+  const hasFilters = category || organic || minPrice || maxPrice || sort;
 
-  const fetchProducts = () => {
+  const fetchProducts = async () => {
     setLoading(true);
-    setProducts(
-      dummyProducts.filter((p) => p.category === category || category === ""),
-    );
-    setLoading(false);
+    try {
+      const params = new URLSearchParams();
+      if (category) params.set("category", category);
+      if (organic) params.set("organic", organic);
+      if (sort) params.set("sort", sort);
+      if (maxPrice) params.set("maxPrice", maxPrice);
+      if (minPrice) params.set("minPrice", minPrice);
+      params.set("page", String(page));
+      params.set("limit", "12");
+
+      const { data } = await api.get(`/products?${params.toString()}`);
+      setProducts(data.products);
+      setTotalPages(data.pages);
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || error?.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
     fetchProducts();
-  }, [category]);
+  }, [category, organic, sort, minPrice, maxPrice, page]);
 
   const updateFilter = (key: string, value: string) => {
     const newParams = new URLSearchParams(searchParams);
@@ -72,6 +88,7 @@ const Products = () => {
               <FilterPanel
                 categories={categoriesData}
                 category={category}
+                organic={organic}
                 updateFilter={updateFilter}
                 minPrice={minPrice}
                 maxPrice={maxPrice}
@@ -131,7 +148,7 @@ const Products = () => {
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 xl:gap-8">
                 {products.map((product) => product.stock > 0 && (
-                  <ProductCard key={product._id} product={product} />
+                  <ProductCard key={product.id} product={product} />
                 ))}
               </div>
             )}
