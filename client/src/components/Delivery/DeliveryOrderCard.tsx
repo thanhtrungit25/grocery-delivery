@@ -60,7 +60,7 @@ const DeliveryOrderCard = ({
         <div className="flex items-center gap-2 text-sm">
           <div className="size-8 rounded-full bg-app-cream flex-center">
             <span className="text-xs font-semibold text-app-green">
-              {user.name?.charAt(0)}
+              {user.name?.charAt(0).toUpperCase()}
             </span>
           </div>
           <div>

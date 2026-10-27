@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { prisma } from "../config/prisma.js";
+import { inngest } from "../inngest/index.js";
 
 const unpaidOnlinePaymentFilter = {
   OR: [
@@ -85,11 +86,17 @@ export const createOrder = async (req: Request, res: Response) => {
     });
   }
   
-  // inngest logic here
   // Send stock update events for each product in the order
-  // event: inventory/stock.updated
-  // event: order/placed
-}
+  for (const item of orderItems) {
+    await inngest.send({
+      name: "inventory/stock.updated",
+      data: { productId: item.product },
+    });
+  }
+
+  // Send order placed event
+  await inngest.send({ name: "order/placed", data: { orderId: items.product } });
+};
 
 // Get user's orders
 // Get: /api/orders

@@ -174,7 +174,7 @@ const AdminProductForm = () => {
             </div>
             <div>
               <label className="block text-sm font-medium text-zinc-700 mb-2">
-                Original Price ($)
+                Original Price ($) - Optional
               </label>
               <input
                 required
@@ -232,6 +232,7 @@ const AdminProductForm = () => {
                           : formData.image
                       }
                       alt="Preview"
+                      className="w-full h-full object-cover"
                     />
                   </div>
                 )}
@@ -239,6 +240,7 @@ const AdminProductForm = () => {
                   type="file"
                   accept="image/*"
                   onChange={(e) => setImageFile(e.target.files?.[0] || null)}
+                  className="w-full px-4 py-2.5 rounded-lg border border-zinc-200 file:px-4 file:py-2 file:rounded-lg file:border-0 file:mr-4 file:text-sm file:font-medium file:bg-app-orange file:text-white hover:file:bg-orange-600 cursor-pointer focus:border-app-green outline-none transition-all"
                 />
               </div>
             </div>

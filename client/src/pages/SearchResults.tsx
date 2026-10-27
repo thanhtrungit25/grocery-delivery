@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react"
-import type { Product } from "../types"
+import toast from "react-hot-toast"
 import { Link, useSearchParams } from "react-router-dom"
-import { dummyProducts } from "../assets/assets"
 import { Home, Search } from "lucide-react"
+import type { Product } from "../types"
+import api from "../config/api"
 import Loading from "../components/Loading"
 import ProductCard from "../components/ProductCard"
 
@@ -17,7 +18,13 @@ const SearchResults = () => {
   useEffect(() => {
     if (!query) return;
     setLoading(true)
-    setProducts(dummyProducts.filter((p: any) => p.name.toLowerCase().includes(query.toLowerCase())))
+    api
+      .get(`/products?search=${encodeURIComponent(query)}`)
+      .then((res) => setProducts(res.data.products))
+      .catch((error: any) =>
+        toast.error(error?.response?.data?.message || error?.message),
+      ).finally(() => setLoading(false));
+    
     setLoading(false)
   }, [query])
 
@@ -26,7 +33,7 @@ const SearchResults = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Breadcrumb */}
         <nav className="flex items-center gap-2 text-sm text-app-text-light mb-6">
-          <Link to="/" className="hover:text-app-green transition-colors">
+          <Link to="/" className="flex gap-2 hover:text-app-green transition-colors">
             <Home className="size-4" />
             <span>/</span>
             <span className="text-app-green font-medium">Search Results</span>
@@ -54,7 +61,7 @@ const SearchResults = () => {
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
             {products.map((product) => (
-              <ProductCard key={product._id} product={product} />
+              <ProductCard key={product.id} product={product} />
             ))}
           </div>
         )}

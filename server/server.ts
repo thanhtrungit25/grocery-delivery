@@ -1,6 +1,8 @@
 import "dotenv/config";
 import express, { NextFunction, Request, Response } from 'express';
 import cors from "cors";
+import { serve } from "inngest/express";
+import { inngest, functions } from "./inngest/index.js"
 import authRouter from "./routes/authRoutes.js";
 import productRouter from "./routes/productRoutes.js";
 import uploadRouter from "./routes/uploadRoutes.js";
@@ -30,6 +32,7 @@ app.use("/api/addresses", addressRouter);
 app.use("/api/admin", adminRouter);
 app.use("/api/delivery", deliveryPartnerRouter);
 app.use("/api/payment", paymentRouter);
+app.use("/api/inngest", serve({ client: inngest, functions }));
 
 // Error handling
 app.use((error: any, req: Request, res: Response, next: NextFunction) => {

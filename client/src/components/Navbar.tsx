@@ -13,7 +13,7 @@ import {
   XIcon,
 } from "lucide-react";
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 
@@ -32,6 +32,14 @@ const Navbar = () => {
     navigate("/");
   };
 
+  const handleSearch = (e: React.SubmitEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate("/search?q=" + encodeURIComponent(searchQuery.trim()));
+      setSearchQuery("");
+    }
+  }
+
   return (
     <nav className="bg-white sticky top-0 z-50 border-b border-app-border">
       <div className="max-w-7xl mx-auto h-16 px-4 sm:px-6 lg:px-8 py-2 flex-center gap-6">
@@ -40,21 +48,34 @@ const Navbar = () => {
           to="/"
           className="flex item-center gap-2 text-[22px] font-medium shrink-0"
         >
-          <BikeIcon size={24} /> Instacart
+          <BikeIcon size={26} /> Instacart
         </Link>
 
         <div className="w-full flex items-center justify-end gap-4 lg:gap-10">
           {/* Nav Links - Desktop */}
-          <div className="flex gap-2">
-            <Link to="/">Home</Link>
-            <Link to="/products">Products</Link>
-            <Link to="/deals" className="text-app-orange">
-              Deals
-            </Link>
+          <div className="hidden md:flex items-center gap-6 text-sm text-zinc-600 font-semibold">
+            {[
+              { to: "/", label: "Home" },
+              { to: "/products", label: "Products" },
+              { to: "/deals", label: "Deals" },
+            ].map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                className={({ isActive }) =>
+                  `relative py-2 after:absolute after:left-0 after:right-0 after:bottom-0 after:h-0.5 after:origin-left after:bg-app-green-lighter after:transition-transform ${isActive ? "text-app-green after:scale-x-100" : "after:scale-x-0 hover:text-app-green hover:after:scale-x-100"}`
+                }
+              >
+                {item.label}
+              </NavLink>
+            ))}
           </div>
 
           {/* Search */}
-          <form className="hidden sm:flex flex-1 max-w-sm text-xs sm:text-sm" onSubmit={(e) => {e.preventDefault();navigate("/search?q=" + searchQuery)}}>
+          <form
+            className="hidden sm:flex flex-1 max-w-sm text-xs sm:text-sm"
+            onSubmit={handleSearch}
+          >
             <div className="relative w-full">
               <SearchIcon className="size-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-500" />
               <input
