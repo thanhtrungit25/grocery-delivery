@@ -164,7 +164,7 @@ const Navbar = () => {
                           Deals
                         </Link>
                         {user?.isAdmin && (
-                          <Link to="/admin/products" className="dropdown-link">
+                          <Link to="/admin" className="dropdown-link">
                             <ShieldIcon
                               className="text-app-orange-dark"
                               size={26}

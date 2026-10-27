@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 import type { Address } from "../types";
-import { dummyAddressData } from "../assets/assets";
-import { useCart } from "../context/CartContext";
 import {
   ArrowLeft,
   CheckIcon,
@@ -10,6 +9,9 @@ import {
   CreditCardIcon,
   MapPinIcon,
 } from "lucide-react";
+import { useCart } from "../context/CartContext";
+import { useAuth } from "../context/AuthContext";
+import api from "../config/api";
 import CheckoutAddress from "../components/Checkout/CheckoutAddress";
 import CheckoutPayment from "../components/Checkout/CheckoutPayment";
 import CheckoutReview from "../components/Checkout/CheckoutReview";
@@ -18,14 +20,14 @@ const Checkout = () => {
   const navigate = useNavigate();
   const currency = import.meta.env.VITE_CURRENCY_SYMBOL || "₹";
 
-  const { items, cartTotal } = useCart();
-  const { user } = { user: { addresses: dummyAddressData } };
+  const { items, cartTotal, clearCart } = useCart();
+  const { user } = useAuth();
 
   const [step, setStep] = useState("address");
   const [loading, setLoading] = useState(false);
 
   const [address, setAddress] = useState<Address>({
-    _id: "",
+    id: "",
     label: "Home",
     address: "",
     city: "",
@@ -36,9 +38,25 @@ const Checkout = () => {
     lng: 0,
   });
 
-  const [paymentMethod, setPaymentMethod] = useState("card");
+  const [paymentMethod, setPaymentMethod] = useState("cash");
 
-  const deliveryFee = cartTotal > 20 ? 0 : 1.99;
+  const hasValidAddress = Boolean(
+    address.address.trim() &&
+    address.city.trim() &&
+    address.state.trim() &&
+    address.zip.trim()
+  );
+
+  const changeStep = (nextStep: string) => {
+    if ((nextStep === "payment" || nextStep === "review") && !hasValidAddress) {
+      toast.error("Please add a delivery address first.");
+      setStep("address");
+      return;
+    }
+    setStep(nextStep);
+  };
+
+  const deliveryFee = cartTotal > 500 ? 0 : 50;
   const tax = cartTotal * 0.08;
   const total = cartTotal + deliveryFee + tax;
 
@@ -48,8 +66,116 @@ const Checkout = () => {
     { key: "review", label: "Review", icon: CheckIcon },
   ];
 
-  const handlePlaceOrder = async () => {
+  const buildOrderPayload = () => ({
+    items: items.map((item) => ({
+      product: item.product.id,
+      quantity: item.quantity,
+    })),
+    shippingAddress: address,
+    paymentMethod,
+  });
+
+  const handleRazorpayPayment = async () => {
+    if (!window.Razorpay) {
+      toast.error(
+        "Razorpay checkout failed to load. Please refresh and try again.",
+      );
+      return;
+    }
+
     setLoading(true);
+    try {
+      const { data: orderData } = await api.post(
+        "orders",
+        buildOrderPayload(),
+      );
+      const dbOrder = orderData.order;
+
+      const { data: paymentData } = await api.post("/payment/create-order", {
+        amount: dbOrder.total,
+        orderId: dbOrder.id,
+      });
+
+      const options: RazorpayOptions = {
+        key: paymentData.key,
+        amount: paymentData.order.amount,
+        currency: paymentData.order.currency,
+        name: "Instacart",
+        description: "Grocery order payment",
+        order_id: paymentData.order.id,
+        handler: async (response) => {
+          try {
+            await api.post("/payment/verify", {
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+              orderId: dbOrder.id,
+            });
+
+            clearCart();
+            toast.success("Payment successful!");
+            navigate("/orders");
+          } catch (error: any) {
+            toast.error(
+              error?.response?.data?.message ||
+                error?.message ||
+                "Payment verification failed",
+            );
+          } finally {
+            setLoading(false);
+            scrollTo(0, 0);
+          }
+        },
+        prefill: {
+          name: user?.name,
+          email: user?.email,
+          contact: user?.phone || "",
+        },
+        theme: {
+          color: "#1B3022",
+        },
+        modal: {
+          ondismiss: () => {
+            setLoading(false);
+            toast.error("Payment cancelled");
+          },
+        },
+      };
+
+      const razorpay = new window.Razorpay(options);
+      razorpay.open();
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || error?.message || "Failed");
+      setLoading(false);
+      // scrollTo(0, 0);
+    }
+  };
+
+  const handlePlaceOrder = async () => {
+    if (!hasValidAddress) {
+      toast.error("Please add a delivery address first");
+      setStep("address");
+      return;
+    }
+
+    if (paymentMethod === "RAZORPAY") {
+      await handleRazorpayPayment();
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { data } = await api.post("/orders", buildOrderPayload());
+
+      clearCart();
+      toast.success("Order placed successfully!");
+      navigate(`/orders/${data.order.id}`);
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || error?.message || "Failed");
+    } finally {
+      setLoading(true);
+    }
+
     navigate("/orders");
   };
 
@@ -59,7 +185,7 @@ const Checkout = () => {
       const defaultAddr =
         user.addresses.find((a) => a.isDefault) || user.addresses[0];
       setAddress({
-        _id: defaultAddr?._id,
+        id: defaultAddr?.id,
         label: defaultAddr?.label,
         address: defaultAddr?.address,
         city: defaultAddr?.city,
@@ -126,7 +252,7 @@ const Checkout = () => {
               <CheckoutAddress
                 address={address}
                 setAddress={setAddress}
-                setStep={setStep}
+                setStep={changeStep}
                 user={user}
               />
             )}
@@ -135,7 +261,7 @@ const Checkout = () => {
               <CheckoutPayment
                 paymentMethod={paymentMethod}
                 setPaymentMethod={setPaymentMethod}
-                setStep={setStep}
+                setStep={changeStep}
               />
             )}
 
@@ -146,6 +272,7 @@ const Checkout = () => {
                 handlePlaceOrder={handlePlaceOrder}
                 loading={loading}
                 total={total}
+                paymentMethod={paymentMethod}
               />
             )}
           </div>

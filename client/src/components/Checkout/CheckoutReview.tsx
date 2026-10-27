@@ -7,6 +7,7 @@ interface CheckoutReviewProps {
   handlePlaceOrder: () => void;
   loading: boolean;
   total: number;
+  paymentMethod: string;
 }
 
 const CheckoutReview = ({
@@ -15,6 +16,7 @@ const CheckoutReview = ({
   handlePlaceOrder,
   loading,
   total,
+  paymentMethod,
 }: CheckoutReviewProps) => {
   const currency = import.meta.env.VITE_CURRENCY_SYMBOL || "$";
 
@@ -69,8 +71,12 @@ const CheckoutReview = ({
         className="w-full py-3 bg-app-orange text-white font-semibold hover:bg-app-orange-dark transition-colors disabled:opacity-60 active:scale-[0.98]"
       >
         {loading
-          ? "Placing Order..."
-          : `Place Order - ${currency}${total.toFixed(2)}`}
+          ? paymentMethod === "RAZORPAY"
+            ? "Processing Payment..."
+            : "Placing Order..."
+          : paymentMethod === "RAZORPAY"
+            ? `Pay Now - ${currency}${total.toFixed(2)}`
+            : `Place Order - ${currency}${total.toFixed(2)}`}
       </button>
     </div>
   );

@@ -2,7 +2,7 @@ import React from "react";
 import { ChevronRightIcon, CreditCardIcon } from "lucide-react";
 
 interface CheckoutPaymentProps {
-  setStep: React.Dispatch<React.SetStateAction<string>>;
+  setStep: (step: string) => void;
   paymentMethod: string;
   setPaymentMethod: React.Dispatch<React.SetStateAction<string>>;
 }
@@ -20,14 +20,14 @@ const CheckoutPayment = ({
       <div className="space-y-3">
         {[
           {
-            value: "card",
-            label: "Credit / Debit / Debit Card",
-            desc: "Pay securely with your card",
-          },
-          {
             value: "cash",
             label: "Cash on delivery",
             desc: "Pay when you receive",
+          },
+          {
+            value: "RAZORPAY",
+            label: "Razorpay (Online Payment)",
+            desc: "Pay securely via UPI, card, or wallet",
           },
         ].map((method) => (
           <label
