@@ -25,6 +25,8 @@ const ProductPage = () => {
 
   useEffect(() => {
     setLoading(true);
+    scrollTo(0, 0);
+  
     api
       .get(`/products/${id}`)
       .then(({ data }) => {

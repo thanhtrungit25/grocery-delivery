@@ -95,7 +95,7 @@ export const createOrder = async (req: Request, res: Response) => {
   }
 
   // Send order placed event
-  await inngest.send({ name: "order/placed", data: { orderId: items.product } });
+  await inngest.send({ name: "order/placed", data: { orderId: order.id } });
 };
 
 // Get user's orders
